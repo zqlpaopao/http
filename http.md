@@ -25,7 +25,7 @@
 
 # ==--网络请求大致图---==
 
-<font color=red size=5x>当网络包到达一个城关的时候，可以通过路由表得到下一个城关的 IP 地址，直接通过 IP 地址找就可以了，为什么还要通过本地的 MAC 地址呢？</font>
+<font color=red size=5x>当网络包到达一个网关的时候，可以通过路由表得到下一个城关的 IP 地址，直接通过 IP 地址找就可以了，为什么还要通过本地的 MAC 地址呢？</font>
 
 
 
@@ -177,26 +177,22 @@ MAC 的全称是 Medium Access Control，即媒体访问控制。控制什么呢
 
 ## UDP
 
+### 1、UDP与TCP区别
 
+- <font color=red size=5x>TCP是面向字节流的</font>
+- <font color=green size=5x>UDP继承ip协议,是基于数据报的</font>
 
-<font color=red size=5x>与TCP区别</font>
+- <font color=red size=5x>TCP是有状态的服务,面向拥塞控制的根据网络情况,调整自身的行为</font>
+- <font color=green size=5x>UDP不是,可以发就会一直发</font>
 
-- TCP是面向字节流的
-- UDP继承ip协议,是基于数据报的
-
-
-
-- TCP是有状态的服务,面向拥塞控制的根据网络情况,调整自身的行为
-- UDP不是,可以发就会一直发
-
-
-
-- TCP有包的校验和检测,面向连接的
-- UDP是无连接的
+- <font color=red size=5x>TCP有包的校验和检测,面向连接的</font>
+- <font color=green size=5x>UDP是无连接的</font>
 
 
 
-## UDP的包头
+### UDP的包头
+
+
 
 
 
