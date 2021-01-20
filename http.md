@@ -25,7 +25,7 @@
 
 # ==--网络请求大致图---==
 
-<font color=red size=5x>当网络包到达一个网关的时候，可以通过路由表得到下一个城关的 IP 地址，直接通过 IP 地址找就可以了，为什么还要通过本地的 MAC 地址呢？</font>
+<font color=red size=5x>当网络包到达一个城关的时候，可以通过路由表得到下一个城关的 IP 地址，直接通过 IP 地址找就可以了，为什么还要通过本地的 MAC 地址呢？</font>
 
 
 
@@ -177,24 +177,20 @@ MAC 的全称是 Medium Access Control，即媒体访问控制。控制什么呢
 
 ## UDP
 
-### 1、UDP与TCP区别
 
-- <font color=red size=5x>TCP是面向字节流的</font>
-- <font color=green size=5x>UDP继承ip协议,是基于数据报的</font>
 
-- <font color=red size=5x>TCP是有状态的服务,面向拥塞控制的根据网络情况,调整自身的行为</font>
-- <font color=green size=5x>UDP不是,可以发就会一直发</font>
+<font color=red size=5x>与TCP区别</font>
 
-- <font color=red size=5x>TCP有包的校验和检测,面向连接的</font>
-- <font color=green size=5x>UDP是无连接的</font>
+- TCP是面向字节流的
+- UDP继承ip协议,是基于数据报的
 
 
 
-### UDP的包头
+- TCP是有状态的服务,面向拥塞控制的根据网络情况,调整自身的行为
+- UDP不是,可以发就会一直发
 
 
 
-<<<<<<< HEAD
 - TCP有包的校验和检测,面向连接的
 - UDP是无连接的
 
@@ -202,8 +198,6 @@ MAC 的全称是 Medium Access Control，即媒体访问控制。控制什么呢
 
 ### UDP的包头
 
-=======
->>>>>>> f57208d67d84a412ec319ca6ac8101a15ca8f5aa
 
 
 ## TCP
@@ -256,9 +250,57 @@ MAC 的全称是 Medium Access Control，即媒体访问控制。控制什么呢
 
 ## 4、四次挥手
 
+![image-20210107211124424](http.assets/image-20210107211124424.png)
+
+### A、四次挥手为什么不是一次
+
+> 如果只是A给B发送关闭,B不回复收到是否关闭,A会一直等着
 
 
 
+### B、为什么不是两次挥手
+
+> 如果是两次,因为B在处理别的事情,还没结束,只有等到B处理结束,然后主动通知A结束
+>
+> 如果此时A跑路,B会一直等待,<font color=red size=5x>TCP没有处理这种情况,Linux处增加了等待时长</font>
+
+
+
+> 等B处理完毕,通知A可以关闭了,然后A发送ACK告诉B收到了,可以关闭
+>
+> 此时<font color=green size=5x>防止B没有收到,A会等待`2MSL`(最大网络报文生存时间),再次时间内没收到,会重发消息,超过最长时间则丢弃消息</font>
+
+
+
+### C、最大报文生存时间
+
+> 2MSL Maximum Segment Lifetime，报文最大生存时间
+>
+> TCP报文是基于ip协议的,二IP协议头中有TTL域,是ip经过的最大路由数,每经过一个处理它的路由器就减1,当值位0的时候数据包将被丢弃,同时发送ICMP报文通知源主机
+
+
+
+### D、超过最大报文生存时间B发来消息
+
+> <font color=green size=5x>**经过2MSL时间,B没有收到FIN的消息,B会重发FIN,这时候A收到这个包之后,A发现等了很久,直接发送RET,于是B知道A结束了**</font>
+
+
+
+## 5、如何查看TCP 连接状态
+
+可以用 netstat 或者 lsof 命令 grep 一下 establish listen close_wait 等这些查看
+
+```
+netstat
+```
+
+![image-20210107211811419](http.assets/image-20210107211811419.png)
+
+
+
+```
+lsof
+```
 
 
 
