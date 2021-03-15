@@ -1478,9 +1478,15 @@ HTTP/1.1 200 OK
 2. deflate：zlib（deflate）压缩格式，流行程度仅次于 gzip；
 3. br：一种专门为 HTTP 优化的新压缩算法（Brotli）。
 
+## ==3、Accept--Content-type==
 
 
 
+```
+HTTP协议定义了两个Accept请求头字段和两个Content告诉客户端
+客户端使用Accept头来请求询问服务端可以接收什么数据
+服务器用Content告诉
+```
 
 
 
