@@ -1900,6 +1900,18 @@ Ctrl+F5 其实是发送的**Cache-Control: no-cache**
 
 
 
+![image-20210325182027418](geekTime-http.assets/image-20210325182027418.png)
+
+![image-20210325182107419](geekTime-http.assets/image-20210325182107419.png)
+
+
+
+
+
+
+
+
+
 
 
 # 24、SSL/TLS
