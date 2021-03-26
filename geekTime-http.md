@@ -1922,9 +1922,17 @@ Ctrl+F5 其实是发送的**Cache-Control: no-cache**
 
 
 
+![image-20210326112201867](geekTime-http.assets/image-20210326112201867.png)
 
 
 
+![image-20210326112214448](geekTime-http.assets/image-20210326112214448.png)
+
+
+
+![image-20210326112230170](geekTime-http.assets/image-20210326112230170.png)
+
+![image-20210326112242874](geekTime-http.assets/image-20210326112242874.png)
 
 
 
