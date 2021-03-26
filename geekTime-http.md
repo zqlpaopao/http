@@ -1979,9 +1979,9 @@ HTTPS其实就是在HTTP的基础上增加了SSL层或者TLS，TLS是SSL的增�
 
 
 
+![image-20210326171045651](geekTime-http.assets/image-20210326171045651.png)
 
 
 
-
-
+![image-20210326171131438](geekTime-http.assets/image-20210326171131438.png)
 
