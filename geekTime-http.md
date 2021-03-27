@@ -1902,7 +1902,9 @@ Ctrl+F5 其实是发送的**Cache-Control: no-cache**
 
 
 
-# 24、SSL/TLS
+# 24、https
+
+
 
 ![image-20210324171536480](geekTime-http.assets/image-20210324171536480.png)
 
