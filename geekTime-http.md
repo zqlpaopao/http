@@ -1957,33 +1957,148 @@ HTTPS其实就是在HTTP的基础上增加了SSL层或者TLS，TLS是SSL的增�
 
 
 
-# 24、https
+# 24、TLS
+
+## 1、TLS的组成
+
+TLS的几个子协议
+
+1. **记录协议**
+
+   >规定了 TLS 收发数据的基本单位：记录（record）。它有点像是 TCP 里的 segment，所有的其他子协议都需要通过记录协议发出。但多个记录数据可以在一个 TCP 包里一次性发出，也并不需要像 TCP 那样返回 ACK。
+
+2. **警报协议**
+
+   > 向对方发出警报信息，有点像是 HTTP 协议里的状态码。比如，protocol_version 就是不支持旧版本，bad_certificate 就是证书有问题，收到警报后另一方可以选择继续，也可以立即终止连接。
+
+3. **握手协议**
+
+   > 是 TLS 里最复杂的子协议，要比 TCP 的 SYN/ACK 复杂的多，浏览器和服务器会在握手过程中协商 TLS 版本号、随机数、密码套件等信息，然后交换证书和密钥参数，最终双方协商得到会话密钥，用于后续的混合加密系统。
+
+4. **变更密码协议**
+
+   > 是一个“通知”，告诉对方，后续的数据都将使用加密保护。那么反过来，在它之前，数据都是明
 
 
 
+## 2、TLS的握手过程
+
+![image-20210328190205314](geekTime-http.assets/image-20210328190205314.png)
 
 
 
+其中每一个框都是一个记录,多个记录组成一个tcp包发送出去,所以最多经过两个消息往返就可以完成握手,然后安全的发送http报文
+
+
+
+<font color=red size=5x>**下面我们来详细的看下握手过程**</font>
 
 
 
 ![image-20210326112201867](geekTime-http.assets/image-20210326112201867.png)
 
+第一步是客户端向服务端发送请求,发现是https,于是请求的是默认端口443,然后TCP建立三次握手,详细过程可以查看之前的章节
+
 
 
 ![image-20210326112214448](geekTime-http.assets/image-20210326112214448.png)
+
+1. 在TCP建立连接后,浏览器发送 **Client Hello**消息,跟服务器进行通信,里,信息又==客户端TLS支持版本、密码套件、随机数client random(用于后续生成密钥)==
+
+```go
+Handshake Protocol: Client Hello
+    Version: TLS 1.2 (0x0303)
+    Random: 1cbf803321fd2623408dfe…
+    Cipher Suites (17 suites)
+        Cipher Suite: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (0xc02f)
+        Cipher Suite: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (0xc030)
+```
+
+2. 服务器验证密码套件和TLS版本,发现支持,于是选择合适的密码套件(ECEHE)和TLS版本信息以及==证书==发送给客户端
+3. ==接下来是一个关键的操作，因为服务器选择了 ECDHE 算法，所以它会在证书后发送“Server Key Exchange”消息，里面是椭圆曲线的公钥（Server Params），用来实现密钥交换算法，再加上自己的私钥签名认证。==
+
+```go
+Handshake Protocol: Server Key Exchange
+    EC Diffie-Hellman Server Params
+        Curve Type: named_curve (0x03)
+        Named Curve: x25519 (0x001d)
+        Pubkey: 3b39deaf00217894e...
+        Signature Algorithm: rsa_pkcs1_sha512 (0x0601)
+        Signature: 37141adac38ea4...
+```
+
+4. 之后是“Server Hello Done”消息,服务器发送完毕
+
+==这样第一个消息往返就结束了（两个 TCP 包），结果是客户端和服务器通过明文共享了三个信息：Client Random、Server Random 和 Server Params==
 
 
 
 ![image-20210326112230170](geekTime-http.assets/image-20210326112230170.png)
 
+5. 客户端拿到证书,然后进行证书验证,证书验证是逐级进行验证的,确认证书的真实性,==在用证书的公钥进行验证签名,旧确认了服务器的身份==
+6. <font color=red size=5x>**然后客户端拿到密码套件,也生成一个椭圆曲线的公钥,用 **Client Key Change**消息发送给服务器**</font>
+
+```go
+Handshake Protocol: Client Key Exchange
+    EC Diffie-Hellman Client Params
+        Pubkey: 8c674d0e08dc27b5eaa…
+```
+
+7. 现在客户端和服务器手里都拿到了密钥交换算法的两个参数（Client Params、Server Params），就用 ECDHE 算法一阵算，算出了一个新的东西，叫“Pre-Master”，其实也是一个随机数。
+8. ==服务端也有这两个参数,根据客户端发送的ECDHE算法,也会生成一个相同的Pre-Master随机数==
+9. 现在客户端和服务器手里有了三个随机数：==Client Random==、==Server Random== 和 ==Pre-Master==。用这三个作为原始材料，就可以生成用于加密会话的主密钥，叫“Master Secret”。而黑客因为拿不到“Pre-Master”，所以也就得不到主密钥。
+
+“Master Secret”究竟是怎么算出来的吧，贴一下 RFC 里的公式：
+
+```go
+master_secret = PRF(pre_master_secret, "master secret", ClientHello.random + ServerHello.random)
+```
+
+这里的“PRF”就是伪随机数函数，它基于密码套件里的最后一个参数，比如这次的 SHA384，通过摘要算法来再一次强化“Master Secret”的随机性。
+
+主密钥有 48 字节，但它也不是最终用于通信的会话密钥，还会再用 PRF 扩展出更多的密钥，比如客户端发送用的会话密钥（client_write_key）、服务器发送用的会话密钥（server_write_key）等等，避免只用一个密钥带来的安全隐患。
+
+==有了主密钥和派生的会话密钥，握手就快结束了。客户端发一个“Change Cipher Spec”，然后再发一个“Finished”消息，把之前所有发送的数据做个摘要，再加密一下，让服务器做个验证。意思就是告诉服务器：“后面都改用对称算法加密通信了啊，`用的就是打招呼时说的 AES，加密对不对还得你测一下。`==
+
+”服务器也是同样的操作，发“Change Cipher Spec”和“Finished”消息，双方都验证加密解密 OK，握手正式结束，后面就收发被加密的 HTTP 请求和响应了。
+
+Pre-master为什么拿不到?
+
+因为这个时候客户端和服务端都有CLient Params、Server Params生成的基于ECDHE的随机数pre-master
+
+
+
+==可能有疑问,都说是有非对称加密算法?==
+
+刚才说的其实是如今主流的 TLS 握手过程，这与传统的握手有两点不同。
+
+第一个，使用 ECDHE 实现密钥交换，而不是 RSA，所以会在服务器端发出“Server Key Exchange”消息。
+
+第二个，因为使用了 ECDHE，客户端可以不用等到服务器发回“Finished”确认握手完毕，立即就发出 HTTP 报文，省去了一个消息往返的时间浪费。这个叫“TLS False Start”，意思就是“抢跑”，和“TCP Fast Open”有点像，都是不等连接完全建立就提前发应用数据，提高传输的效率。
+
+
+
+<font color=red size=5x>**我们来看下RSA参与的传统TLS建立连接过程**</font>
+
+我们看到第5部就是RSA发送的加密的Pre-Master
+
+![image-20210326171045651](geekTime-http.assets/image-20210326171045651.png)
+
+![image-20210326171131438](geekTime-http.assets/image-20210326171131438.png)
+
+
+
+然后就握手完毕,用对称加密发送HTTP报文
+
+
+
 ![image-20210326112242874](geekTime-http.assets/image-20210326112242874.png)
 
 
 
-![image-20210326171045651](geekTime-http.assets/image-20210326171045651.png)
 
 
 
-![image-20210326171131438](geekTime-http.assets/image-20210326171131438.png)
+
+
 
