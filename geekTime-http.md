@@ -2087,28 +2087,13 @@ Pre-master为什么拿不到?
 ![image-20210326171131438](geekTime-http.assets/image-20210326171131438.png)
 
 
-
-<<<<<<< HEAD
-
-
-
-=======
 然后就握手完毕,用对称加密发送HTTP报文
 
 
 
 ![image-20210326112242874](geekTime-http.assets/image-20210326112242874.png)
->>>>>>> 52e6f97d72f043d1277027ecf3871863abfc1ca6
 
 
-
-
-
-
-
-
-
-<<<<<<< HEAD
 
 
 
@@ -2177,4 +2162,3 @@ Pre-master为什么拿不到?
 
 ![image-20210329140759299](geekTime-http.assets/image-20210329140759299.png)
 =======
->>>>>>> 52e6f97d72f043d1277027ecf3871863abfc1ca6
