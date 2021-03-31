@@ -2101,8 +2101,9 @@ Pre-master为什么拿不到?
 
 
 
-
 # 25、Wireshark 抓包TLS握手过程
+
+1. 在 TCP 建立连接之后，浏览器会首先发一个“Client Hello”消息，也就是跟服务器“打招呼”。里面有客户端的版本号、支持的密码套件，还有一个随机数（Client Random），用于后续生成会话密钥。
 
 ![image-20210329135330929](geekTime-http.assets/image-20210329135330929.png)
 
@@ -2118,6 +2119,8 @@ Pre-master为什么拿不到?
 
 
 
+2. 服务器收到“Client Hello”后，会返回一个“Server Hello”消息。把版本号对一下，也给出一个随机数（Server Random），然后从客户端的列表里选一个作为本次通信使用的密码套件，在这里它选择了“TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256”。
+
 
 
 ![image-20210329135802178](geekTime-http.assets/image-20210329135802178.png)
@@ -2126,9 +2129,8 @@ Pre-master为什么拿不到?
 
 
 
-
-
-
+3. 随后，服务器为了证明身份，会给客户端发送数字证书，即 `Certificate` 消息：
+   （其中包括CA机构为服务器颁发的公钥、CA机构签名等信息）
 
 ![image-20210329140009777](geekTime-http.assets/image-20210329140009777.png)
 
@@ -2138,7 +2140,13 @@ Pre-master为什么拿不到?
 
 
 
+4. 因为服务器选择了 ECDHE 算法，所以它会在证书后发送“==Server Key Exchange==”消息，里面是椭圆曲线的公钥（Server Params），用来实现密钥交换算法，再加上自己的私钥签名认证。
 
+   这是ECDHE算法与RSA算法的不同之处，服务器会在发送证书后，再发送 `Server Key Exchange` 消息给客户端，其中带有 椭圆曲线公钥 `Server Params`，用来实现密钥交换（密钥协商），再加上自己的私钥签名认证（签名算法为RSA）。
+
+   最后，服务器发送 `Server Hello Done` 消息给客户端，通知客户端所有消息已经发送完毕。
+
+   此过程采用的是一个tcp连接
 
 
 
@@ -2146,7 +2154,15 @@ Pre-master为什么拿不到?
 
 
 
+<font color=red size=5x>**Client**</font>
 
+6. 客户端收到服务器的 Certificate 消息后，使用操作系统内置的CA机构的公钥对证书解密，如果解密成功，得到 数据原文 及 摘要值 H1，然后客户端使用与CA机构相同的摘要算法（散列算法，SHA或MD5）对数据原文进行计算得到 摘要值 H2，比较 H1 与 H2，若完全相同则说明证书合法且未被其他人篡改，从而拿到服务器的RSA公钥。
+
+   ==随后，客户端将自身的椭圆曲线公钥（Pubkey）使用服务器RSA公钥加密后，通过 `Client Key Exchange` 消息发给服务器：==
+
+7. 客户端 首先根据 服务器的椭圆曲线公钥Server Params 及自身的椭圆曲线私钥计算出第三个随机数 Pre-Master，然后再使用 Client Random、Server Random、Pre-Master 这三个随机数计算出 主密钥 Master Secret，并使用 Change Cipher Spec 消息将主密钥使用服务器的RSA私钥加密后发给服务器，通知服务器开始使用对称加密的方式进行通信。
+
+   最后，客户端发送 `Encrypted Handshake Message` 消息，使用主密钥`Master Secret` 将之前的握手消息加密后发给服务器，一来验证新生成的对称密钥是否正确，二来让服务器验证之前的握手数据是否被篡改过。
 
 
 
@@ -2156,9 +2172,11 @@ Pre-master为什么拿不到?
 
 
 
+<font color=red size=5x>**Server**</font>
 
-
-
+8. 服务器收到客户端的 `Client Key Exchange` 消息后，使用私钥解密得到客户端的椭圆曲线公钥 `Client Params`，至此服务器也可以计算出pre-master：
+9. 服务使用上一步中生成的主密钥 `Master Secret` 对之前的握手数据进行对称加密，然后通过 `Encrypted Handshake Message` 消息发送给客户端进行验证。
 
 ![image-20210329140759299](geekTime-http.assets/image-20210329140759299.png)
 =======
+
